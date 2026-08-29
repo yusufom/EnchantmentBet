@@ -69,12 +69,21 @@ def score_matrix(lam_home: float, lam_away: float) -> list[list[float]]:
 
 def derive_markets(matrix: list[list[float]]) -> dict:
     home = draw = away = over25 = btts = 0.0
-    best_score, best_p = (0, 0), -1.0
+    # Most likely scoreline overall AND conditional on each outcome — the
+    # overall argmax is nearly always 1-1 or 1-0 in tight games, so callers
+    # display the best score consistent with the predicted outcome instead.
+    best: dict[str, tuple[tuple[int, int], float]] = {
+        "any": ((0, 0), -1.0),
+        "home": ((1, 0), -1.0),
+        "draw": ((1, 1), -1.0),
+        "away": ((0, 1), -1.0),
+    }
     for i, row in enumerate(matrix):
         for j, p in enumerate(row):
-            if i > j:
+            outcome = "home" if i > j else "draw" if i == j else "away"
+            if outcome == "home":
                 home += p
-            elif i == j:
+            elif outcome == "draw":
                 draw += p
             else:
                 away += p
@@ -82,8 +91,9 @@ def derive_markets(matrix: list[list[float]]) -> dict:
                 over25 += p
             if i >= 1 and j >= 1:
                 btts += p
-            if p > best_p:
-                best_p, best_score = p, (i, j)
+            for key in ("any", outcome):
+                if p > best[key][1]:
+                    best[key] = ((i, j), p)
     return {
         "home": home,
         "draw": draw,
@@ -92,5 +102,6 @@ def derive_markets(matrix: list[list[float]]) -> dict:
         "under_2.5": 1.0 - over25,
         "btts_yes": btts,
         "btts_no": 1.0 - btts,
-        "most_likely_score": best_score,
+        "most_likely_score": best["any"][0],
+        "score_by_outcome": {k: v[0] for k, v in best.items() if k != "any"},
     }

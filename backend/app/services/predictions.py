@@ -12,8 +12,10 @@ from datetime import datetime, timezone
 from ..config import get_settings
 from ..db import get_db
 from ..engine import predict_fixture
+from ..llm import review_predictions
 from ..providers import get_provider
 from ..schemas import SPORTS, Prediction, PredictionsResponse, RefreshMeta, Sport
+from .results import accuracy_summary
 
 logger = logging.getLogger(__name__)
 
@@ -35,18 +37,39 @@ async def get_predictions(date: str, sport: Sport | None = None) -> PredictionsR
     for m in meta_docs:
         m.pop("_id", None)
         meta.append(RefreshMeta(**m))
-    return PredictionsResponse(date=date, sport=sport or "all", predictions=preds, meta=meta)
+    return PredictionsResponse(
+        date=date,
+        sport=sport or "all",
+        predictions=preds,
+        meta=meta,
+        accuracy=accuracy_summary(date, preds),
+    )
 
 
 async def refresh_predictions(date: str, sport: Sport | None = None) -> PredictionsResponse:
-    sports: list[Sport] = [sport] if sport else list(SPORTS)
+    enabled = [s for s in SPORTS if s in get_settings().enabled_sports_list]
+    sports: list[Sport] = [sport] if sport else enabled
+    if sport is None and (disabled := [s for s in SPORTS if s not in enabled]):
+        # A full refresh also clears this date's docs for sports that have
+        # since been disabled, so they stop appearing in "all" responses.
+        db = get_db()
+        await db.predictions.delete_many({"date": date, "sport": {"$in": disabled}})
+        await db.refresh_meta.delete_many({"date": date, "sport": {"$in": disabled}})
     results = await asyncio.gather(
         *(_refresh_sport(date, s) for s in sports), return_exceptions=True
     )
+    errors: list[str] = []
     for s, result in zip(sports, results):
         if isinstance(result, BaseException):
             logger.error("refresh failed for %s on %s: %r", s, date, result)
-    return await get_predictions(date, sport)
+            errors.append(f"{s}: {result}")
+    from .. import llm
+
+    if llm.last_review_error:
+        errors.append(llm.last_review_error)
+    response = await get_predictions(date, sport)
+    response.errors = errors
+    return response
 
 
 async def _refresh_sport(date: str, sport: Sport) -> int:
@@ -61,6 +84,10 @@ async def _refresh_sport(date: str, sport: Sport) -> int:
         # falls just past midnight UTC.
         pred.date = date
         predictions.append(pred)
+
+    # Claude layer: news relevance filtering, written analysis, bounded
+    # probability adjustment. No-op without an Anthropic key.
+    await review_predictions(contexts, predictions)
 
     db = get_db()
     # Replace only this (sport, date) slice of the collection.

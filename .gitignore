@@ -16,3 +16,4 @@ frontend/.env.local
 
 # Misc
 .DS_Store
+backend.log

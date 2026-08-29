@@ -50,6 +50,41 @@ export interface NewsItem {
   sentiment: number;
 }
 
+export interface AIPrediction {
+  picks: Record<string, string>;
+  confidence: number;
+  analysis: string;
+  model: string;
+}
+
+export interface FixtureResult {
+  home_score: number;
+  away_score: number;
+  status: string;
+  outcome: "home" | "draw" | "away";
+  ht_home?: number | null;
+  ht_away?: number | null;
+  fetched_at: string;
+}
+
+export interface MarketGrade {
+  market: string;
+  pick: string;
+  actual: string;
+  correct: boolean;
+}
+
+export interface AccuracySummary {
+  date: string;
+  graded: number;
+  total: number;
+  pick_accuracy?: number | null;
+  market_accuracy: Record<string, number>;
+  exact_score_accuracy?: number | null;
+  ai_overall?: number | null;
+  ai_accuracy: Record<string, number>;
+}
+
 export interface Prediction {
   sport: Sport;
   date: string;
@@ -64,9 +99,15 @@ export interface Prediction {
   factors: Factor[];
   injuries: Injury[];
   news: NewsItem[];
+  insight?: string | null;
+  ai?: AIPrediction | null;
   algorithm: string;
   data_source: "live" | "mock";
   generated_at: string;
+  result?: FixtureResult | null;
+  grades: MarketGrade[];
+  ai_grades?: MarketGrade[];
+  pick_correct?: boolean | null;
 }
 
 export interface RefreshMeta {
@@ -82,4 +123,6 @@ export interface PredictionsResponse {
   sport: string;
   predictions: Prediction[];
   meta: RefreshMeta[];
+  accuracy?: AccuracySummary | null;
+  errors?: string[];
 }

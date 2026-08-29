@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from "react";
 
+import AccuracyBar from "@/components/AccuracyBar";
 import DateNav, { todayISO } from "@/components/DateNav";
 import PredictionCard from "@/components/PredictionCard";
 import SkeletonCard from "@/components/SkeletonCard";
 import SportTabs from "@/components/SportTabs";
-import { usePredictions, useRefreshPredictions } from "@/hooks/usePredictions";
-import type { SportFilter } from "@/lib/types";
+import {
+  usePredictions,
+  useRefreshPredictions,
+  useRefreshResults,
+} from "@/hooks/usePredictions";
+import type { Sport } from "@/lib/types";
 
 function LastRefreshed({ iso }: { iso?: string }) {
   const [label, setLabel] = useState("");
@@ -21,10 +26,11 @@ function LastRefreshed({ iso }: { iso?: string }) {
 
 export default function Home() {
   const [date, setDate] = useState(todayISO);
-  const [sport, setSport] = useState<SportFilter>("all");
+  const [sport, setSport] = useState<Sport>("football");
 
   const { data, isLoading, isError, error, refetch } = usePredictions(date, sport);
   const refresh = useRefreshPredictions();
+  const results = useRefreshResults();
 
   const predictions = data?.predictions ?? [];
   const meta = data?.meta ?? [];
@@ -44,8 +50,9 @@ export default function Home() {
             ✨ EnchantmentBet
           </h1>
           <p className="mt-1 text-sm text-ink2">
-            Statistical predictions for football, basketball &amp; tennis —
-            form, injuries and team news included.
+            Statistical football &amp; basketball predictions — form, injuries
+            and team news factored in. Each sport refreshes and settles
+            independently.
           </p>
         </div>
         <div className="text-right text-xs text-muted">
@@ -63,24 +70,57 @@ export default function Home() {
           <DateNav date={date} onChange={setDate} />
           <SportTabs sport={sport} onChange={setSport} />
         </div>
-        <button
-          onClick={doRefresh}
-          disabled={refresh.isPending}
-          className="inline-flex items-center gap-2 rounded-lg bg-home px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {refresh.isPending && (
-            <span
-              aria-hidden
-              className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
-            />
+        <div className="flex items-center gap-2">
+          {predictions.length > 0 && (
+            <button
+              onClick={() => results.mutate({ date, sport })}
+              disabled={results.isPending}
+              className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink2 transition-colors hover:bg-raised hover:text-ink disabled:opacity-50"
+            >
+              {results.isPending && (
+                <span
+                  aria-hidden
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ink2/40 border-t-ink2"
+                />
+              )}
+              {results.isPending ? "Fetching scores…" : "Update results"}
+            </button>
           )}
-          {refresh.isPending ? "Refreshing…" : "Refresh predictions"}
-        </button>
+          <button
+            onClick={doRefresh}
+            disabled={refresh.isPending}
+            className="inline-flex items-center gap-2 rounded-lg bg-home px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {refresh.isPending && (
+              <span
+                aria-hidden
+                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              />
+            )}
+            {refresh.isPending ? "Refreshing…" : "Refresh predictions"}
+          </button>
+        </div>
       </div>
+
+      {data?.accuracy && <AccuracyBar accuracy={data.accuracy} />}
+
+      {(data?.errors?.length ?? 0) > 0 && (
+        <div className="mb-4 rounded-lg border border-warn/40 bg-surface px-4 py-3 text-xs text-warn">
+          <span aria-hidden className="mr-1.5">⚠</span>
+          {data!.errors!.map((e, i) => (
+            <div key={i} className="inline">{e} </div>
+          ))}
+        </div>
+      )}
 
       {refresh.isError && (
         <p className="mb-4 rounded-lg border border-serious/40 bg-surface px-4 py-3 text-sm text-serious">
           Refresh failed: {(refresh.error as Error).message}
+        </p>
+      )}
+      {results.isError && (
+        <p className="mb-4 rounded-lg border border-serious/40 bg-surface px-4 py-3 text-sm text-serious">
+          Fetching results failed: {(results.error as Error).message}
         </p>
       )}
 

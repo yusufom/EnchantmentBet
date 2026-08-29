@@ -12,15 +12,41 @@ class Settings(BaseSettings):
     # auto | live | mock
     data_mode: str = "auto"
 
+    # Comma-separated subset of football,basketball,tennis
+    enabled_sports: str = "football"
+
+    # Cap on fixtures predicted per sport per day. Each football fixture costs
+    # ~4 API calls, so mind your api-sports plan's daily quota.
+    max_fixtures: int = 40
+
+    # Max seconds one refresh may spend waiting on api-sports rate limits
+    # (free plans allow only 10 requests/minute). Teams that don't fit the
+    # budget fall back to defaults and are filled in by the next refresh via
+    # the 24h stats cache.
+    api_budget_seconds: int = 150
+
     apisports_key: str = ""
     apitennis_key: str = ""
     newsapi_key: str = ""
+
+    # Anthropic Claude layer: filters news relevance, writes per-fixture
+    # analysis, and applies a small bounded adjustment to the model's odds.
+    anthropic_api_key: str = ""
+    # Required when the key is identity-linked: the workspace the requests
+    # act in (Console -> Settings -> Workspaces, id starts with "wrkspc_").
+    anthropic_workspace_id: str = ""
+    llm_model: str = "claude-opus-5"
+    llm_enabled: bool = True
 
     cors_origins: str = "http://localhost:3000"
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def enabled_sports_list(self) -> list[str]:
+        return [s.strip() for s in self.enabled_sports.split(",") if s.strip()]
 
     def live_enabled(self, sport: str) -> bool:
         """Whether a live provider can be used for the given sport."""

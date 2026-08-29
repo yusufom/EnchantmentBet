@@ -2,9 +2,35 @@
 
 import { useEffect, useState } from "react";
 
-import type { Market, Prediction } from "@/lib/types";
+import type { Market, MarketGrade, Prediction } from "@/lib/types";
 import ConfidenceBadge from "./ConfidenceBadge";
 import OutcomeBar from "./OutcomeBar";
+
+const AI_MARKET_LABEL: Record<string, string> = {
+  winner: "Winner",
+  double_chance: "Double chance",
+  "over_under_1.5": "O/U 1.5",
+  "over_under_2.5": "O/U 2.5",
+  btts: "BTTS",
+  first_half_winner: "1st half",
+  total_points: "Total",
+};
+
+const AI_MARKET_ORDER = Object.keys(AI_MARKET_LABEL);
+
+function aiPickLabel(
+  market: string,
+  pick: string,
+  homeName: string,
+  awayName: string
+): string {
+  const short = (n: string) => (n.length > 12 ? `${n.slice(0, 11)}…` : n);
+  if (market === "winner" || market === "first_half_winner") {
+    return pick === "1" ? short(homeName) : pick === "2" ? short(awayName) : "Draw";
+  }
+  if (market === "double_chance") return pick;
+  return pick.charAt(0).toUpperCase() + pick.slice(1);
+}
 
 const SPORT_ICON: Record<string, string> = {
   football: "⚽",
@@ -82,7 +108,19 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
           </div>
           <CompetitorRow name={fixture.away.name} logo={fixture.away.logo} />
         </div>
-        {prediction.predicted_score && (
+        {prediction.result ? (
+          <div className="shrink-0 text-right">
+            <div className="text-[11px] uppercase tracking-wide text-muted">
+              Final ({prediction.result.status})
+            </div>
+            <div className="text-2xl font-bold tabular-nums">
+              {prediction.result.home_score}-{prediction.result.away_score}
+            </div>
+            <div className="text-[11px] text-muted tabular-nums">
+              predicted {prediction.predicted_score}
+            </div>
+          </div>
+        ) : prediction.predicted_score ? (
           <div className="shrink-0 text-right">
             <div className="text-[11px] uppercase tracking-wide text-muted">
               {isTennis ? "Sets" : "Score"}
@@ -96,7 +134,7 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
               </div>
             )}
           </div>
-        )}
+        ) : null}
       </div>
 
       <OutcomeBar
@@ -115,8 +153,70 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
             {(main.pick_probability * 100).toFixed(0)}%
           </span>
         </div>
-        <ConfidenceBadge label={prediction.confidence_label} value={prediction.confidence} />
+        {prediction.pick_correct != null ? (
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border border-line bg-raised px-2.5 py-1 text-xs font-medium ${
+              prediction.pick_correct ? "text-good" : "text-serious"
+            }`}
+          >
+            <span aria-hidden>{prediction.pick_correct ? "✓" : "✗"}</span>
+            {prediction.pick_correct ? "Pick hit" : "Pick missed"}
+          </span>
+        ) : (
+          <ConfidenceBadge label={prediction.confidence_label} value={prediction.confidence} />
+        )}
       </div>
+
+      {prediction.ai && (
+        <div className="rounded-xl border border-home/30 bg-raised/60 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink">
+              ✦ Claude&apos;s prediction
+            </span>
+            <span className="text-[11px] text-muted tabular-nums">
+              confidence {(prediction.ai.confidence * 100).toFixed(0)}%
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {AI_MARKET_ORDER.filter((m) => prediction.ai!.picks[m]).map((market) => {
+              const pick = prediction.ai!.picks[market];
+              const grade: MarketGrade | undefined = prediction.ai_grades?.find(
+                (g) => g.market === market
+              );
+              return (
+                <span
+                  key={market}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
+                    grade
+                      ? grade.correct
+                        ? "border-good/40 text-good"
+                        : "border-serious/40 text-serious"
+                      : "border-line text-ink2"
+                  }`}
+                  title={grade ? `actual: ${grade.actual}` : undefined}
+                >
+                  {grade && <span aria-hidden>{grade.correct ? "✓" : "✗"}</span>}
+                  <span className="text-muted">{AI_MARKET_LABEL[market]}:</span>
+                  <span className="font-semibold">
+                    {aiPickLabel(market, pick, fixture.home.name, fixture.away.name)}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+          {prediction.ai.analysis && (
+            <p className="mt-2 text-xs leading-relaxed text-ink2">
+              {prediction.ai.analysis}
+            </p>
+          )}
+        </div>
+      )}
+      {!prediction.ai && prediction.insight && (
+        <p className="border-l-2 border-home/60 pl-3 text-xs leading-relaxed text-ink2">
+          <span className="mr-1 font-semibold text-ink">Claude&apos;s read:</span>
+          {prediction.insight}
+        </p>
+      )}
 
       {secondary.length > 0 && (
         <div className="flex flex-wrap gap-1.5">

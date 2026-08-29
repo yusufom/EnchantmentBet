@@ -147,7 +147,9 @@ def _predict_football(ctx, home_mult, away_mult, elo_p_home, w, home_edge):
         _market("over_under_2.5", {"over": dc["over_2.5"], "under": dc["under_2.5"]}),
         _market("btts", {"yes": dc["btts_yes"], "no": dc["btts_no"]}),
     ]
-    score = dc["most_likely_score"]
+    # Show the most likely score consistent with the predicted outcome, not
+    # the overall argmax (which is 1-1 for almost any close match).
+    score = dc["score_by_outcome"][markets[0].pick]
     return (
         markets,
         f"{score[0]}-{score[1]}",

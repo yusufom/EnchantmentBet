@@ -56,7 +56,9 @@ async def _fetch_team(api_key: str, team_id: str, name: str) -> list[NewsItem]:
             resp = await client.get(
                 "https://newsapi.org/v2/everything",
                 params={
-                    "q": f'"{name}"',
+                    # Title-only match: full-text q= returns any article whose
+                    # BODY mentions the team, which is mostly noise.
+                    "qInTitle": f'"{name}"',
                     "language": "en",
                     "sortBy": "publishedAt",
                     "pageSize": 5,
@@ -65,17 +67,21 @@ async def _fetch_team(api_key: str, team_id: str, name: str) -> list[NewsItem]:
             )
         resp.raise_for_status()
         articles = resp.json().get("articles", [])
-        items = [
-            NewsItem(
-                team_id=team_id,
-                headline=a["title"],
-                source=(a.get("source") or {}).get("name"),
-                published_at=a.get("publishedAt"),
-                sentiment=score_sentiment(f"{a.get('title', '')} {a.get('description') or ''}"),
+        items, seen = [], set()
+        for a in articles:
+            title = (a.get("title") or "").strip()
+            if not title or title.lower() in seen:
+                continue
+            seen.add(title.lower())
+            items.append(
+                NewsItem(
+                    team_id=team_id,
+                    headline=title,
+                    source=(a.get("source") or {}).get("name"),
+                    published_at=a.get("publishedAt"),
+                    sentiment=score_sentiment(f"{title} {a.get('description') or ''}"),
+                )
             )
-            for a in articles
-            if a.get("title")
-        ]
         _news_cache[team_id] = items
         return items
     except Exception:

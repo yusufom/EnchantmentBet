@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "EnchantmentBet — Sports Predictions",
   description:
-    "Statistical match predictions for football, basketball and tennis, factoring in form, injuries and team news.",
+    "Statistical football and basketball predictions, factoring in form, injuries and team news, with per-day accuracy tracking.",
 };
 
 export default function RootLayout({

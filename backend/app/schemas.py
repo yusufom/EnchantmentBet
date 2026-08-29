@@ -104,6 +104,37 @@ class Factor(BaseModel):
     impact: Literal["positive_home", "positive_away", "neutral"] = "neutral"
 
 
+class AIPrediction(BaseModel):
+    """Claude's own picks, independent of the statistical model.
+
+    picks maps market -> pick, e.g. {"winner": "1", "double_chance": "1X",
+    "over_under_1.5": "over", "over_under_2.5": "under", "btts": "no",
+    "first_half_winner": "X", "total_points": "over"}.
+    """
+
+    picks: dict[str, str]
+    confidence: float  # 0..1
+    analysis: str
+    model: str
+
+
+class FixtureResult(BaseModel):
+    home_score: int
+    away_score: int
+    status: str  # e.g. "FT", "AET"
+    outcome: Literal["home", "draw", "away"]
+    ht_home: int | None = None  # half-time score when the provider has it
+    ht_away: int | None = None
+    fetched_at: datetime
+
+
+class MarketGrade(BaseModel):
+    market: str
+    pick: str
+    actual: str
+    correct: bool
+
+
 class Prediction(BaseModel):
     sport: Sport
     date: str  # YYYY-MM-DD (UTC date of the fixture)
@@ -118,9 +149,26 @@ class Prediction(BaseModel):
     factors: list[Factor] = Field(default_factory=list)
     injuries: list[Injury] = Field(default_factory=list)
     news: list[NewsItem] = Field(default_factory=list)
+    insight: str | None = None  # Claude's short written analysis
+    ai: AIPrediction | None = None  # Claude's own market picks
     algorithm: str
     data_source: Literal["live", "mock"]
     generated_at: datetime
+    result: FixtureResult | None = None
+    grades: list[MarketGrade] = Field(default_factory=list)
+    ai_grades: list[MarketGrade] = Field(default_factory=list)
+    pick_correct: bool | None = None
+
+
+class AccuracySummary(BaseModel):
+    date: str
+    graded: int
+    total: int
+    pick_accuracy: float | None = None  # 0..1 over graded fixtures
+    market_accuracy: dict[str, float] = Field(default_factory=dict)
+    exact_score_accuracy: float | None = None
+    ai_overall: float | None = None  # all AI picks pooled
+    ai_accuracy: dict[str, float] = Field(default_factory=dict)  # per AI market
 
 
 class RefreshMeta(BaseModel):
@@ -136,6 +184,8 @@ class PredictionsResponse(BaseModel):
     sport: str
     predictions: list[Prediction]
     meta: list[RefreshMeta] = Field(default_factory=list)
+    accuracy: AccuracySummary | None = None
+    errors: list[str] = Field(default_factory=list)
 
 
 class RefreshRequest(BaseModel):

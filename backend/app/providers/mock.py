@@ -100,6 +100,30 @@ class MockProvider(SportProvider):
             return self._basketball(date, rng)
         return self._tennis(date, rng)
 
+    async def get_results(self, date: str) -> dict[str, dict]:
+        """Deterministic plausible final scores for the date's mock slate."""
+        if self.sport == "tennis":
+            return {}
+        results = {}
+        for ctx in await self.get_fixture_contexts(date):
+            rng = random.Random(f"result:{ctx.fixture.id}")
+            edge = (ctx.home_stats.rating - ctx.away_stats.rating) / 400.0
+            if self.sport == "football":
+                home = min(5, max(0, int(rng.gauss(1.5 + edge, 1.1) + 0.5)))
+                away = min(5, max(0, int(rng.gauss(1.2 - edge, 1.1) + 0.5)))
+            else:  # basketball
+                home = max(70, int(rng.gauss(112 + edge * 6, 9) + 0.5))
+                away = max(70, int(rng.gauss(109 - edge * 6, 9) + 0.5))
+                if home == away:
+                    home += 1
+            ht_home = sum(1 for _ in range(home) if rng.random() < 0.45)
+            ht_away = sum(1 for _ in range(away) if rng.random() < 0.45)
+            results[ctx.fixture.id] = {
+                "home": home, "away": away, "status": "FT",
+                "ht_home": ht_home, "ht_away": ht_away,
+            }
+        return results
+
     # -- schedule helpers -------------------------------------------------
 
     def _pairings(self, pool: dict[str, float], count: int, rng: random.Random):

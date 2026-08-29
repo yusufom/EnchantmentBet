@@ -32,3 +32,13 @@ export function refreshPredictions(
     body: JSON.stringify({ date, sport: sport ?? null }),
   });
 }
+
+export function refreshResults(
+  date: string,
+  sport?: Sport
+): Promise<PredictionsResponse> {
+  return request("/api/results/refresh", {
+    method: "POST",
+    body: JSON.stringify({ date, sport: sport ?? null }),
+  });
+}

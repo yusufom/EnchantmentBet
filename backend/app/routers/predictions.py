@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from ..schemas import PredictionsResponse, RefreshRequest, Sport
 from ..services import predictions as service
+from ..services import results as results_service
 
 router = APIRouter(prefix="/api", tags=["predictions"])
 
@@ -27,6 +28,12 @@ async def get_predictions(
 @router.post("/predictions/refresh", response_model=PredictionsResponse)
 async def refresh_predictions(body: RefreshRequest):
     return await service.refresh_predictions(_validate_date(body.date), body.sport)
+
+
+@router.post("/results/refresh", response_model=PredictionsResponse)
+async def refresh_results(body: RefreshRequest):
+    """Fetch final scores for the date's fixtures and grade the predictions."""
+    return await results_service.refresh_results(_validate_date(body.date), body.sport)
 
 
 @router.get("/health")

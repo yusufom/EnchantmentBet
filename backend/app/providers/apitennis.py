@@ -11,7 +11,7 @@ import time
 
 import httpx
 
-from ..config import Settings
+from ..config import Settings, get_settings
 from ..schemas import Competitor, Fixture, FixtureContext, TeamStats
 from .base import SportProvider
 from .news import maybe_fetch_news
@@ -19,7 +19,6 @@ from .news import maybe_fetch_news
 logger = logging.getLogger(__name__)
 
 BASE = "https://api.api-tennis.com/tennis/"
-MAX_FIXTURES = 25
 
 _rankings_cache: dict[str, tuple[float, dict[str, int]]] = {}
 RANKINGS_TTL = 12 * 3600
@@ -73,7 +72,7 @@ class APITennisProvider(SportProvider):
                 f for f in raw
                 if "singles" in (f.get("event_type_type") or "").lower()
                 and f.get("event_status", "") in ("", "Not Started")
-            ][:MAX_FIXTURES]
+            ][: get_settings().max_fixtures]
             atp = await self._rankings(client, "ATP")
             wta = await self._rankings(client, "WTA")
             ranks = {**wta, **atp}

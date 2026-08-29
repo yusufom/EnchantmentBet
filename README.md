@@ -1,9 +1,17 @@
 # ✨ EnchantmentBet
 
-Statistical sports prediction platform covering **football, basketball and
-tennis**. Pulls the latest fixtures, team form, injuries and team news, runs
-them through a per-sport statistical model ensemble, and serves date-organized
-predictions to a Next.js dashboard.
+Statistical sports prediction platform, currently focused on **football**
+(the engine also supports basketball and tennis — re-enable via
+`ENABLED_SPORTS` in `backend/.env`). Pulls the latest fixtures, team form,
+injuries and team news, runs them through a statistical model ensemble, and
+serves date-organized predictions to a Next.js dashboard.
+
+Football coverage: the top European leagues **and their second divisions**
+(La Liga/Segunda, Serie A/B, Bundesliga/2. Bundesliga, Ligue 1/2, Eredivisie,
+Primeira Liga, Scottish Premiership…), the **full EFL ladder** (Premier
+League, Championship, League One, League Two + FA Cup and League Cup),
+continental cups, and other majors — in priority order, capped by
+`MAX_FIXTURES`.
 
 | Layer | Stack |
 |---|---|
@@ -39,6 +47,52 @@ automatically per sport once its key is present):
 - `APISPORTS_KEY` — [api-sports.io](https://api-sports.io) (covers API-FOOTBALL and API-BASKETBALL)
 - `APITENNIS_KEY` — [api-tennis.com](https://api-tennis.com)
 - `NEWSAPI_KEY` — [newsapi.org](https://newsapi.org) (optional; enriches predictions with headline sentiment)
+- `ANTHROPIC_API_KEY` — [Anthropic](https://console.anthropic.com) (optional; enables the Claude review layer)
+
+### Claude review layer
+
+With `ANTHROPIC_API_KEY` set, every refreshed prediction is reviewed by Claude
+(`LLM_MODEL`, default `claude-opus-5`). For each fixture Claude:
+
+- **filters the news** — keyword search inevitably attaches articles about
+  other clubs; Claude keeps only items genuinely about the two teams,
+- **writes a short analysis** shown on the card,
+- **applies a small bounded adjustment** (max ±7 points of win probability)
+  when the headlines/injuries contain something the statistical model missed,
+- **makes its own independent picks**, shown as "✦ Claude's prediction" on
+  the card: full-time winner (1/X/2), double chance (1X/12/X2), over/under
+  1.5 and 2.5 goals, both-teams-to-score and first-half leader for football;
+  winner, first-half leader and total points vs the model's line for
+  basketball. These are graded against results just like the model's picks
+  (first-half markets use real half-time scores), and the day summary shows
+  a separate Claude accuracy row — so you can see over time whether the AI
+  or the statistical model calls more games right.
+
+The statistical model remains the backbone — Claude can nudge, never
+override — and any API failure falls back to the untouched statistical
+prediction. Reviewing a 40-fixture slate costs roughly $0.20–0.40 per refresh
+at Opus pricing; set `LLM_ENABLED=false` to switch the layer off without
+removing the key.
+
+### Results & accuracy
+
+`POST /api/results/refresh {"date": ...}` (or the **Update results** button)
+fetches final scores for the date's fixtures and grades every prediction:
+main pick, over/under 2.5, both-teams-to-score, and exact scoreline. Graded
+cards show the final score and a hit/miss badge, and the dashboard shows the
+day's accuracy summary (picks %, per-market %, exact-score %). Run it at the
+end of the day — on free api-sports plans, fixture data is only accessible
+within about a day of today, so grade a slate the same evening or the next
+morning.
+
+**Free-plan note (api-sports):** free keys allow only ~100 requests/day and
+10/minute, and expose stats a couple of seasons back. The provider adapts:
+it paces and retries around the per-minute throttle under a time budget
+(`API_BUDGET_SECONDS`), resolves each team's stats through its real league
+history (so promoted/relegated clubs still differentiate), skips optional
+calls (injuries, head-to-head) when constrained, and caches stats for 24h —
+so **each press of Refresh fills in more fixtures** until the slate is fully
+differentiated. A paid key removes all of this automatically.
 
 ## How predictions work
 
