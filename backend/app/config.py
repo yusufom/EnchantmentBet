@@ -19,6 +19,27 @@ class Settings(BaseSettings):
     # ~4 API calls, so mind your api-sports plan's daily quota.
     max_fixtures: int = 40
 
+    # SportMonks (odds, match facts). Free tier covers only the Danish
+    # Superliga and Scottish Premiership.
+    sportmonks_api_key: str = ""
+
+    # How far to trust bookmaker odds over the model's own probabilities.
+    # Backtested on 157 Danish/Scottish fixtures: blending improves calibration
+    # monotonically (log-loss 1.0264 -> 1.0008 at full weight) but not pick
+    # accuracy. 0.5 takes most of the calibration gain while keeping the
+    # model's independent signal — at 1.0 it would just mirror the bookmaker.
+    odds_weight: float = 0.5
+
+    # Weight given to expected goals over actual goals when both are known.
+    # xG predicts future scoring better than past goals, which carry finishing
+    # luck; some actual-goal signal is kept because xG models have their own
+    # error. 0 disables the xG layer entirely.
+    xg_weight: float = 0.7
+
+    # How long a cached team-stats row stays fresh. Safe to keep high on
+    # limited plans, whose accessible season is already completed and static.
+    stats_ttl_days: int = 7
+
     # Max seconds one refresh may spend waiting on api-sports rate limits
     # (free plans allow only 10 requests/minute). Teams that don't fit the
     # budget fall back to defaults and are filled in by the next refresh via

@@ -46,6 +46,11 @@ class TeamStats(BaseModel):
     # Football (per game)
     goals_scored_pg: float | None = None
     goals_conceded_pg: float | None = None
+    # Expected goals per game (Understat, big-5 leagues). Kept alongside the
+    # actual rates rather than replacing them, so the blend stays auditable
+    # and the weight can change without refetching.
+    xg_for_pg: float | None = None
+    xg_against_pg: float | None = None
     goals_scored_home_pg: float | None = None
     goals_scored_away_pg: float | None = None
 
@@ -89,6 +94,8 @@ class FixtureContext(BaseModel):
     h2h_draws: int = 0
     data_quality: float = 1.0  # 0..1, discounts confidence when inputs are thin
     source: Literal["live", "mock"] = "mock"
+    odds: "MarketOdds | None" = None
+    match_facts: list["MatchFact"] = Field(default_factory=list)
 
 
 class Market(BaseModel):
@@ -116,6 +123,24 @@ class AIPrediction(BaseModel):
     confidence: float  # 0..1
     analysis: str
     model: str
+
+
+class MatchFact(BaseModel):
+    """A pre-match fact for the card and for Claude's prompt."""
+
+    category: Literal["market", "venue", "weather", "referee", "absence", "h2h", "form"]
+    label: str
+    value: str
+
+
+class MarketOdds(BaseModel):
+    """De-vigged bookmaker probabilities (the overround is removed, so each
+    market sums to 1)."""
+
+    match_winner: dict[str, float]           # home / draw / away
+    over_under_25: dict[str, float] | None = None
+    btts: dict[str, float] | None = None
+    bookmakers: int = 1
 
 
 class FixtureResult(BaseModel):
@@ -151,13 +176,25 @@ class Prediction(BaseModel):
     news: list[NewsItem] = Field(default_factory=list)
     insight: str | None = None  # Claude's short written analysis
     ai: AIPrediction | None = None  # Claude's own market picks
+    match_facts: list[MatchFact] = Field(default_factory=list)
+    odds: MarketOdds | None = None  # de-vigged market view, when available
     algorithm: str
     data_source: Literal["live", "mock"]
+    data_quality: float = 1.0  # 0..1, how much real data backs this prediction
     generated_at: datetime
     result: FixtureResult | None = None
     grades: list[MarketGrade] = Field(default_factory=list)
     ai_grades: list[MarketGrade] = Field(default_factory=list)
     pick_correct: bool | None = None
+
+
+class ConfidenceBucket(BaseModel):
+    """Pick accuracy within one confidence band, with its sample size — a
+    band's percentage is meaningless without knowing how many fixtures
+    produced it."""
+
+    graded: int
+    accuracy: float
 
 
 class AccuracySummary(BaseModel):
@@ -169,6 +206,9 @@ class AccuracySummary(BaseModel):
     exact_score_accuracy: float | None = None
     ai_overall: float | None = None  # all AI picks pooled
     ai_accuracy: dict[str, float] = Field(default_factory=dict)  # per AI market
+    # Model pick accuracy split by the confidence it was made with, so you can
+    # see whether "high confidence" actually means more often right.
+    confidence_accuracy: dict[str, ConfidenceBucket] = Field(default_factory=dict)
 
 
 class RefreshMeta(BaseModel):

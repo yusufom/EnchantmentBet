@@ -64,10 +64,20 @@ async def refresh_predictions(date: str, sport: Sport | None = None) -> Predicti
             logger.error("refresh failed for %s on %s: %r", s, date, result)
             errors.append(f"{s}: {result}")
     from .. import llm
+    from ..providers import sportmonks
 
     if llm.last_review_error:
         errors.append(llm.last_review_error)
     response = await get_predictions(date, sport)
+    # Explain silence: a configured odds feed that produced nothing looks
+    # broken otherwise.
+    football = [p for p in response.predictions if p.sport == "football"]
+    if sportmonks.enabled() and football and not any(p.odds for p in football):
+        covered = ", ".join(sorted(sportmonks.covered_league_names()))
+        errors.append(
+            f"No bookmaker odds for this slate — your SportMonks plan covers "
+            f"only {covered}, and no fixture today is in those leagues."
+        )
     response.errors = errors
     return response
 

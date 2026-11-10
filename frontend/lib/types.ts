@@ -50,6 +50,19 @@ export interface NewsItem {
   sentiment: number;
 }
 
+export interface MatchFact {
+  category: "market" | "venue" | "weather" | "referee" | "absence" | "h2h" | "form";
+  label: string;
+  value: string;
+}
+
+export interface MarketOdds {
+  match_winner: Record<string, number>;
+  over_under_25?: Record<string, number> | null;
+  btts?: Record<string, number> | null;
+  bookmakers: number;
+}
+
 export interface AIPrediction {
   picks: Record<string, string>;
   confidence: number;
@@ -74,6 +87,11 @@ export interface MarketGrade {
   correct: boolean;
 }
 
+export interface ConfidenceBucket {
+  graded: number;
+  accuracy: number;
+}
+
 export interface AccuracySummary {
   date: string;
   graded: number;
@@ -83,6 +101,7 @@ export interface AccuracySummary {
   exact_score_accuracy?: number | null;
   ai_overall?: number | null;
   ai_accuracy: Record<string, number>;
+  confidence_accuracy?: Record<string, ConfidenceBucket>;
 }
 
 export interface Prediction {
@@ -101,8 +120,11 @@ export interface Prediction {
   news: NewsItem[];
   insight?: string | null;
   ai?: AIPrediction | null;
+  match_facts?: MatchFact[];
+  odds?: MarketOdds | null;
   algorithm: string;
   data_source: "live" | "mock";
+  data_quality?: number;
   generated_at: string;
   result?: FixtureResult | null;
   grades: MarketGrade[];

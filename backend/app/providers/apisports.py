@@ -13,8 +13,9 @@ import time
 import httpx
 
 from ..config import Settings, get_settings
-from ..engine.elo import rating_from_performance
+from ..engine.elo import goals_from_rating, rating_from_performance
 from ..schemas import Competitor, Fixture, FixtureContext, Injury, TeamStats
+from . import sportmonks, stats_cache, understat
 from .base import SportProvider
 from .news import maybe_fetch_news
 
@@ -46,16 +47,36 @@ FOOTBALL_LEAGUES = {
     71: "Serie A Brazil", 72: "Serie B Brazil",
     128: "Liga Profesional Argentina", 129: "Primera Nacional",
     # Other majors
+    119: "Danish Superliga",
     98: "J1 League", 103: "Eliteserien", 113: "Allsvenskan",
     207: "Swiss Super League", 253: "MLS", 262: "Liga MX",
     292: "K League 1", 307: "Saudi Pro League",
 }
 _LEAGUE_PRIORITY = {lid: i for i, lid in enumerate(FOOTBALL_LEAGUES)}
+
+# Rating prior by competition strength, used only when a team appears in no
+# accessible standings table (cross-border cup ties, uncovered leagues). Two
+# teams from the same league share a prior, so this separates cross-tier
+# fixtures — same-league games are differentiated by standings data instead.
+_TIER_RATING = {
+    1700: (2,),                                    # Champions League
+    1650: (39, 140, 135, 78, 61),                  # top-5 leagues
+    1600: (3, 88, 94, 203, 144, 253, 262, 307),    # Europa, other top flights
+    1550: (848, 40, 179, 71, 128, 98, 103, 113, 119, 207, 292),
+    1450: (141, 136, 79, 62, 89, 95, 180, 145, 204, 72, 129, 41),  # 2nd tiers
+    1350: (42,),                                   # League Two
+}
+LEAGUE_RATING = {lid: r for r, lids in _TIER_RATING.items() for lid in lids}
+DEFAULT_LEAGUE_RATING = 1500.0
 EXCLUDE_LEAGUE_KEYWORDS = (
     "women", "femen", "u17", "u19", "u20", "u21", "u23", "youth", "junior",
     "reserve", "amateur", "friendlies",
 )
 NBA_LEAGUE_ID = 12
+# Points margin and win rate are strongly correlated, so a high margin
+# scale double-counts and pushes elite teams past 2000. 12 keeps the
+# league inside a ~1230-1820 band.
+BASKETBALL_MARGIN_SCALE = 12.0
 
 
 def _fallback_ok(league_name: str) -> bool:
@@ -137,6 +158,22 @@ class _APISportsBase(SportProvider):
 
     def start_budget(self) -> None:
         self.deadline = time.monotonic() + get_settings().api_budget_seconds
+        self.calls = 0
+        self.stats: dict[str, tuple[TeamStats, float]] = {}
+
+    def _budget_left(self) -> float:
+        return 1e9 if self.deadline is None else self.deadline - time.monotonic()
+
+    @staticmethod
+    def _flatten(rows) -> list[dict]:
+        """Standings come back grouped (conferences, sub-tables); flatten."""
+        out = []
+        for row in rows or []:
+            if isinstance(row, list):
+                out.extend(r for r in row if isinstance(r, dict))
+            elif isinstance(row, dict):
+                out.append(row)
+        return out
 
     async def _get(self, client: httpx.AsyncClient, path: str, params: dict) -> list:
         """GET with per-minute rate-limit backoff (free plans allow 10/min).
@@ -146,6 +183,7 @@ class _APISportsBase(SportProvider):
         """
         while True:
             async with self.sem:
+                self.calls = getattr(self, "calls", 0) + 1
                 resp = await client.get(path, params=params)
             remaining = resp.headers.get("x-ratelimit-requests-remaining")
             if remaining is not None:
@@ -194,6 +232,12 @@ class APISportsFootball(_APISportsBase):
                     key=lambda f: f["league"]["id"],
                 )
             raw = major[: get_settings().max_fixtures]
+
+            # Team stats come from standings — one call per league covers every
+            # team in it, instead of two calls per fixture. Anything already
+            # cached in Mongo costs nothing at all.
+            await self._prepare_stats(client, raw, season)
+
             # Build at most two fixtures at a time so a tight rate-limit
             # budget completes whole fixtures (both teams) in priority order
             # instead of scattering half-resolved pairs across the slate.
@@ -204,7 +248,167 @@ class APISportsFootball(_APISportsBase):
                     return await self._build_context(client, f, season, date)
 
             contexts = await asyncio.gather(*(build(f) for f in raw))
+        logger.info(
+            "football slate: %d fixtures, %d api calls, %d teams with stats",
+            len(raw), self.calls, len(self.stats),
+        )
         return [c for c in contexts if c is not None]
+
+    async def _prepare_stats(
+        self, client: httpx.AsyncClient, fixtures: list[dict], season: int
+    ) -> None:
+        """Populate self.stats for every team in the slate."""
+        team_ids = {
+            str(t["id"])
+            for f in fixtures
+            for t in (f["teams"]["home"], f["teams"]["away"])
+        }
+        self.stats = await stats_cache.load_cached("football", team_ids)
+
+        # Leagues still missing at least one team, most important first.
+        by_league: dict[tuple[int, int], set[str]] = {}
+        for f in fixtures:
+            key = (f["league"]["id"], int(f["league"].get("season") or season))
+            for t in (f["teams"]["home"], f["teams"]["away"]):
+                if str(t["id"]) not in self.stats:
+                    by_league.setdefault(key, set()).add(str(t["id"]))
+        for league_id, lseason in sorted(
+            by_league, key=lambda k: _LEAGUE_PRIORITY.get(k[0], 999)
+        ):
+            if self._budget_left() < 20:
+                logger.warning("budget spent; %d leagues unresolved", len(by_league))
+                break
+            await self._load_standings(client, league_id, lseason)
+
+    async def _load_standings(
+        self, client: httpx.AsyncClient, league_id: int, season: int
+    ) -> None:
+        """One call fills every team in a league. Walks seasons back until the
+        plan returns data, remembering what worked."""
+        preferred = _working_season.get(("football", league_id))
+        candidates = [preferred] if preferred else []
+        candidates += [
+            s for s in (int(season), int(season) - 1, int(season) - 2)
+            if s not in candidates and _season_allowed(s)
+        ]
+        for candidate in candidates:
+            try:
+                resp = await self._get(
+                    client, "/standings", {"league": league_id, "season": candidate}
+                )
+                groups = (resp[0]["league"]["standings"] if resp else []) or []
+                rows = self._flatten(groups)
+                if not rows:
+                    continue
+                xg_by_team = await self._league_xg(league_id, candidate, rows)
+                loaded = []
+                for row in rows:
+                    stats = self._stats_from_standing(
+                        row, xg_by_team.get(str(row["team"]["id"]))
+                    )
+                    if stats:
+                        quality = 1.0 if candidate == int(season) else 0.85
+                        self.stats[stats.competitor_id] = (stats, quality)
+                        loaded.append(stats)
+                if loaded:
+                    _working_season[("football", league_id)] = candidate
+                    await stats_cache.store_many(
+                        "football", loaded,
+                        "standings" if candidate == int(season) else "stale",
+                        candidate,
+                    )
+                    logger.info(
+                        "standings: league %s season %s -> %d teams",
+                        league_id, candidate, len(loaded),
+                    )
+                    return
+            except Exception as exc:
+                _note_plan_error(exc)
+                continue
+        logger.warning("no standings for league %s", league_id)
+
+    async def _league_xg(
+        self, league_id: int, season: int, rows: list[dict]
+    ) -> dict[str, dict]:
+        """Understat xG for a league season, keyed by api-sports team id.
+
+        Empty for leagues Understat does not cover (the EFL, most of the
+        world), in which case the model keeps using actual goals.
+        """
+        try:
+            xg_map = await understat.fetch_league_xg(league_id, int(season))
+            if not xg_map:
+                return {}
+            index = {
+                understat.normalise(r["team"]["name"]): str(r["team"]["id"])
+                for r in rows
+            }
+            matched: dict[str, dict] = {}
+            unmatched: list[str] = []
+            for entry in xg_map.values():
+                team_id = understat.match_team(entry["title"], index)
+                if team_id:
+                    matched[team_id] = entry
+                else:
+                    unmatched.append(entry["title"])
+            if unmatched:
+                logger.warning(
+                    "understat: %d clubs unmatched in league %s: %s",
+                    len(unmatched), league_id, ", ".join(unmatched[:5]),
+                )
+            logger.info(
+                "understat: league %s xG attached to %d/%d clubs",
+                league_id, len(matched), len(rows),
+            )
+            return matched
+        except Exception:
+            logger.warning("understat enrichment failed for league %s", league_id)
+            return {}
+
+    @staticmethod
+    def _stats_from_standing(row: dict, xg: dict | None = None) -> TeamStats | None:
+        try:
+            all_ = row["all"]
+            played = int(all_["played"] or 0)
+            if not played:
+                return None
+            wins = int(all_["win"] or 0)
+            scored = float(all_["goals"]["for"] or 0) / played
+            conceded = float(all_["goals"]["against"] or 0) / played
+
+            # The rating uses the same xG blend as the Poisson side, so both
+            # halves of the ensemble judge a team on chances, not just results.
+            margin_for, margin_against = scored, conceded
+            if xg:
+                w = max(0.0, min(1.0, get_settings().xg_weight))
+                margin_for = w * xg["xg_for_pg"] + (1.0 - w) * scored
+                margin_against = w * xg["xg_against_pg"] + (1.0 - w) * conceded
+
+            return TeamStats(
+                competitor_id=str(row["team"]["id"]),
+                rating=rating_from_performance(
+                    wins / played, margin_for - margin_against, 90.0, played
+                ),
+                matches_played=played,
+                form=list(reversed((row.get("form") or "")[-5:])),
+                goals_scored_pg=round(scored, 3),
+                goals_conceded_pg=round(conceded, 3),
+                xg_for_pg=xg["xg_for_pg"] if xg else None,
+                xg_against_pg=xg["xg_against_pg"] if xg else None,
+            )
+        except Exception:
+            return None
+
+    def _prior_stats(self, team_id: str, league_id: int) -> TeamStats:
+        """Tier-based fallback so an unknown team is not a flat 1500."""
+        rating = LEAGUE_RATING.get(league_id, DEFAULT_LEAGUE_RATING)
+        scored, conceded = goals_from_rating(rating)
+        return TeamStats(
+            competitor_id=team_id,
+            rating=rating,
+            goals_scored_pg=scored,
+            goals_conceded_pg=conceded,
+        )
 
     async def _build_context(
         self, client: httpx.AsyncClient, f: dict, season: int, date: str
@@ -224,11 +428,10 @@ class APISportsFootball(_APISportsBase):
                 venue=(fx.get("venue") or {}).get("name"),
                 round=league.get("round"),
             )
-            quality = 1.0
             season = league.get("season") or season
-            home_stats, q1 = await self._team_stats(client, home["id"], league["id"], season)
-            away_stats, q2 = await self._team_stats(client, away["id"], league["id"], season)
-            quality = min(quality, q1, q2)
+            home_stats, q1 = await self._stats_for(client, home["id"], league["id"], season)
+            away_stats, q2 = await self._stats_for(client, away["id"], league["id"], season)
+            quality = min(q1, q2)
             if self._quota_low():
                 injuries, h2h = [], (0, 0, 0)
             else:
@@ -237,6 +440,10 @@ class APISportsFootball(_APISportsBase):
             news = await maybe_fetch_news(
                 self.newsapi_key,
                 [(str(home["id"]), home["name"]), (str(away["id"]), away["name"])],
+            )
+            # SportMonks: bookmaker odds and pre-match facts, where covered.
+            odds, facts = await sportmonks.enrich(
+                league["id"], date, home["name"], away["name"]
             )
             return FixtureContext(
                 fixture=fixture,
@@ -249,6 +456,8 @@ class APISportsFootball(_APISportsBase):
                 h2h_draws=h2h[2],
                 data_quality=quality,
                 source="live",
+                odds=odds,
+                match_facts=facts,
             )
         except Exception:
             logger.exception("failed to build football context for fixture %s", f)
@@ -272,49 +481,31 @@ class APISportsFootball(_APISportsBase):
                 }
         return results
 
-    async def _team_stats(
+    async def _stats_for(
         self, client: httpx.AsyncClient, team_id: int, league_id: int, season: int
     ) -> tuple[TeamStats, float]:
-        """Stats are league-scoped, so a promoted/relegated team has no rows
-        for its current league in the seasons a limited plan can access. Try
-        the fixture's (league, season) first; on failure resolve the team's
-        real league history and query the newest accessible pair."""
-        cache_key = ("football", team_id)
-        cached = _stats_cache.get(cache_key)
-        if cached and time.time() - cached[0] < STATS_TTL:
-            return cached[1], 1.0
-        season = int(season)
+        """Standings-populated cache first, then a per-team lookup while budget
+        allows, then a league-tier prior."""
+        key = str(team_id)
+        if key in self.stats:
+            return self.stats[key]
 
-        # Requested pair first: one call, succeeds on plans with current data.
-        if _season_allowed(season):
-            stats = await self._try_stats(client, team_id, league_id, season)
+        # A team absent from its league's table (promoted, or a cup side from
+        # a league we didn't load) is worth one direct call if time remains.
+        if self._budget_left() > 30 and not self._quota_low():
+            stats = await self._try_stats(client, team_id, league_id, int(season))
             if stats:
-                _stats_cache[cache_key] = (time.time(), stats)
-                return stats, 1.0
+                self.stats[key] = (stats, 1.0)
+                await stats_cache.store("football", stats, "team_statistics", season)
+                return self.stats[key]
 
-        # Fallback: the team's real league history, newest accessible first.
-        pairs: list[tuple[int, int]] = []
-        try:
-            history = await self._get(client, "/leagues", {"team": team_id, "type": "league"})
-            pairs = sorted(
-                (
-                    (entry["league"]["id"], s["year"])
-                    for entry in history
-                    for s in entry.get("seasons", [])
-                    if _season_allowed(s["year"]) and s["year"] <= season
-                ),
-                key=lambda p: p[1],
-                reverse=True,
-            )
-        except Exception:
-            pass
-        for cand_league, cand_season in [p for p in pairs if p != (league_id, season)][:2]:
-            stats = await self._try_stats(client, team_id, cand_league, cand_season)
-            if stats:
-                _stats_cache[cache_key] = (time.time(), stats)
-                return stats, 0.85
-        logger.warning("football stats unavailable for team %s, using defaults", team_id)
-        return TeamStats(competitor_id=str(team_id)), 0.7
+        prior = self._prior_stats(key, league_id)
+        self.stats[key] = (prior, stats_cache.QUALITY["prior"])
+        logger.info(
+            "team %s unresolved; using %s-tier prior (%.0f)",
+            team_id, league_id, prior.rating,
+        )
+        return self.stats[key]
 
     async def _try_stats(
         self, client: httpx.AsyncClient, team_id: int, league_id: int, season: int
@@ -408,6 +599,7 @@ class APISportsBasketball(_APISportsBase):
                     key=lambda g: g["league"]["id"],
                 )
             raw = nba[: get_settings().max_fixtures]
+            await self._prepare_stats(client, raw, season)
             build_sem = asyncio.Semaphore(2)
 
             async def build(g: dict) -> FixtureContext | None:
@@ -415,7 +607,117 @@ class APISportsBasketball(_APISportsBase):
                     return await self._build_context(client, g, season)
 
             contexts = await asyncio.gather(*(build(g) for g in raw))
+        logger.info(
+            "basketball slate: %d games, %d api calls, %d teams with stats",
+            len(raw), self.calls, len(self.stats),
+        )
         return [c for c in contexts if c is not None]
+
+    async def _prepare_stats(
+        self, client: httpx.AsyncClient, games: list[dict], season: str
+    ) -> None:
+        team_ids = {
+            str(t["id"]) for g in games for t in (g["teams"]["home"], g["teams"]["away"])
+        }
+        self.stats = await stats_cache.load_cached("basketball", team_ids)
+        missing: dict[tuple[int, str], set[str]] = {}
+        for g in games:
+            key = (g["league"]["id"], str(g["league"].get("season") or season))
+            for t in (g["teams"]["home"], g["teams"]["away"]):
+                if str(t["id"]) not in self.stats:
+                    missing.setdefault(key, set()).add(str(t["id"]))
+        for league_id, lseason in missing:
+            if self._budget_left() < 20:
+                break
+            await self._load_standings(client, league_id, lseason)
+
+    async def _load_standings(
+        self, client: httpx.AsyncClient, league_id: int, season: str
+    ) -> None:
+        preferred = _working_season.get(("basketball", league_id))
+        candidates = [preferred] if preferred else []
+        candidates += [
+            s for s in [str(season), *_previous_seasons(str(season))]
+            if s not in candidates
+        ]
+        for candidate in candidates:
+            try:
+                resp = await self._get(
+                    client, "/standings", {"league": league_id, "season": candidate}
+                )
+                rows = self._flatten(resp)
+                loaded = []
+                for row in rows:
+                    stats = self._stats_from_standing(row)
+                    if stats:
+                        quality = 1.0 if candidate == str(season) else 0.85
+                        self.stats[stats.competitor_id] = (stats, quality)
+                        loaded.append(stats)
+                if loaded:
+                    _working_season[("basketball", league_id)] = candidate
+                    await stats_cache.store_many(
+                        "basketball", loaded,
+                        "standings" if candidate == str(season) else "stale",
+                        candidate,
+                    )
+                    logger.info(
+                        "standings: basketball league %s season %s -> %d teams",
+                        league_id, candidate, len(loaded),
+                    )
+                    return
+            except Exception as exc:
+                _note_plan_error(exc)
+                continue
+        logger.warning("no basketball standings for league %s", league_id)
+
+    @staticmethod
+    def _stats_from_standing(row: dict) -> TeamStats | None:
+        try:
+            games = row.get("games") or {}
+            played = games.get("played")
+            played = int(played if played is not None else 0)
+            if not played:
+                return None
+            win = games.get("win")
+            wins = int(win.get("total") if isinstance(win, dict) else (win or 0))
+            points = row.get("points") or {}
+            pts_for = float(points.get("for") or 0) / played
+            pts_against = float(points.get("against") or 0) / played
+            if pts_for <= 0:
+                return None
+            return TeamStats(
+                competitor_id=str(row["team"]["id"]),
+                rating=rating_from_performance(
+                    wins / played, pts_for - pts_against, BASKETBALL_MARGIN_SCALE, played
+                ),
+                matches_played=played,
+                form=list(reversed((row.get("form") or "")[-5:])),
+                off_rating=round(pts_for * 100.0 / 99.0, 1),
+                def_rating=round(pts_against * 100.0 / 99.0, 1),
+                pace=99.0,
+            )
+        except Exception:
+            return None
+
+    async def _stats_for(
+        self, client: httpx.AsyncClient, team_id: int, league_id: int, season: str
+    ) -> tuple[TeamStats, float]:
+        key = str(team_id)
+        if key in self.stats:
+            return self.stats[key]
+        if self._budget_left() > 30 and not self._quota_low():
+            stats, quality = await self._team_stats(client, team_id, league_id, season)
+            if stats.matches_played:
+                self.stats[key] = (stats, quality)
+                await stats_cache.store("basketball", stats, "team_statistics", season)
+                return self.stats[key]
+        off, deff = goals_from_rating(DEFAULT_LEAGUE_RATING, league_avg=112.0)
+        prior = TeamStats(
+            competitor_id=key, rating=DEFAULT_LEAGUE_RATING,
+            off_rating=off, def_rating=deff, pace=99.0,
+        )
+        self.stats[key] = (prior, stats_cache.QUALITY["prior"])
+        return self.stats[key]
 
     async def get_results(self, date: str) -> dict[str, dict]:
         """One /games call: final scores for the date's finished games."""
@@ -457,8 +759,8 @@ class APISportsBasketball(_APISportsBase):
             )
             league_id = g["league"]["id"]
             season = g["league"].get("season") or season
-            home_stats, q1 = await self._team_stats(client, home["id"], league_id, season)
-            away_stats, q2 = await self._team_stats(client, away["id"], league_id, season)
+            home_stats, q1 = await self._stats_for(client, home["id"], league_id, season)
+            away_stats, q2 = await self._stats_for(client, away["id"], league_id, season)
             news = await maybe_fetch_news(
                 self.newsapi_key,
                 [(str(home["id"]), home["name"]), (str(away["id"]), away["name"])],
@@ -502,7 +804,7 @@ class APISportsBasketball(_APISportsBase):
                 stats = TeamStats(
                     competitor_id=str(team_id),
                     rating=rating_from_performance(
-                        wins / games, pts_for - pts_against, 28.0, games
+                        wins / games, pts_for - pts_against, BASKETBALL_MARGIN_SCALE, games
                     ),
                     matches_played=games,
                     off_rating=pts_for * 100.0 / 99.0,

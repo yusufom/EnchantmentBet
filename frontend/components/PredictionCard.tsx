@@ -3,8 +3,19 @@
 import { useEffect, useState } from "react";
 
 import type { Market, MarketGrade, Prediction } from "@/lib/types";
+
 import ConfidenceBadge from "./ConfidenceBadge";
 import OutcomeBar from "./OutcomeBar";
+
+const FACT_ICON: Record<string, string> = {
+  market: "◎",
+  venue: "⌂",
+  weather: "☁",
+  referee: "⚑",
+  absence: "✚",
+  h2h: "⇄",
+  form: "▲",
+};
 
 const AI_MARKET_LABEL: Record<string, string> = {
   winner: "Winner",
@@ -95,7 +106,15 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
           {fixture.surface ? ` · ${fixture.surface}` : ""}
           {fixture.round ? ` · ${fixture.round}` : ""}
         </span>
-        <span className="shrink-0">
+        <span className="flex shrink-0 items-center gap-2">
+          {(prediction.data_quality ?? 1) < 0.7 && (
+            <span
+              className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-warn"
+              title="No season stats for one or both teams — this prediction leans on a league-strength estimate."
+            >
+              est.
+            </span>
+          )}
           <TimeLabel iso={fixture.start_time} />
         </span>
       </header>
@@ -166,6 +185,44 @@ export default function PredictionCard({ prediction }: { prediction: Prediction 
           <ConfidenceBadge label={prediction.confidence_label} value={prediction.confidence} />
         )}
       </div>
+
+      {(prediction.match_facts?.length ?? 0) > 0 && (
+        <div className="rounded-xl border border-line bg-raised/40 p-3">
+          <div className="mb-2 text-xs font-semibold text-ink">Match facts</div>
+          <ul className="flex flex-col gap-1.5">
+            {prediction.match_facts!.map((f, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs">
+                <span aria-hidden className="mt-px w-3 shrink-0 text-center text-muted">
+                  {FACT_ICON[f.category] ?? "•"}
+                </span>
+                <span className="min-w-0">
+                  <span className="text-muted">{f.label}: </span>
+                  <span className="text-ink2">{f.value}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {prediction.odds?.match_winner && (
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-line pt-2 text-[11px] text-muted">
+              <span className="font-semibold text-ink2">Market</span>
+              {(["home", "draw", "away"] as const).map((k) =>
+                prediction.odds!.match_winner[k] != null ? (
+                  <span key={k} className="tabular-nums">
+                    {k === "home"
+                      ? fixture.home.name
+                      : k === "away"
+                        ? fixture.away.name
+                        : "Draw"}{" "}
+                    <span className="font-semibold text-ink2">
+                      {(prediction.odds!.match_winner[k] * 100).toFixed(0)}%
+                    </span>
+                  </span>
+                ) : null
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {prediction.ai && (
         <div className="rounded-xl border border-home/30 bg-raised/60 p-3">

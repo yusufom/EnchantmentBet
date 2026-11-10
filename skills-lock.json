@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "nutmeg": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/nutmeg/SKILL.md",
+      "computedHash": "1bac93bd81010c297a28e357d3eb11c6eae4b84fdbb672c0069a7cd22db7d502"
+    },
+    "nutmeg-acquire": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/acquire/SKILL.md",
+      "computedHash": "78b3685dfd65944eb1abaa723a637ccee13b0e4ed0cd8c06a4dcd3cfc05133b6"
+    },
+    "nutmeg-analyse": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/analyse/SKILL.md",
+      "computedHash": "5c87374ab066a9341c981cbfdc953da03d92f34d732fe371faa63bdc5f5273f2"
+    },
+    "nutmeg-brainstorm": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/brainstorm/SKILL.md",
+      "computedHash": "5c4ef196937f3a3759c7b5e324c5baf5cf3477af70b12b5094f738b114978a84"
+    },
+    "nutmeg-compute": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/compute/SKILL.md",
+      "computedHash": "5e5540008ae256f3b93e4a3725acc641845a07239ab8ab0c6591ff2e422f9582"
+    },
+    "nutmeg-heal": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/heal/SKILL.md",
+      "computedHash": "881ef66bf48388344b85a13cb81679e370fec82c53d5bb47df0c33b9f24f2daf"
+    },
+    "nutmeg-learn": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/learn/SKILL.md",
+      "computedHash": "9e2ef0f9c98467eb7c54cecab7c5535a15bd345f98dd4ac2091e48983a81d309"
+    },
+    "nutmeg-review": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/review/SKILL.md",
+      "computedHash": "173c24589204b5fe26bbc4b485f680c9663c704610cf0e28a67ef5d72ed78b2e"
+    },
+    "nutmeg-store": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/store/SKILL.md",
+      "computedHash": "3a0bd603660c883bed55de9b7399b5b5bb498c4bd79e1bbba49a3e2013eb5b03"
+    },
+    "nutmeg-wrangle": {
+      "source": "withqwerty/nutmeg",
+      "sourceType": "github",
+      "skillPath": "skills/wrangle/SKILL.md",
+      "computedHash": "b3b1e3d8fe1daa9917ad532bf25f47db10a15253693d3be9de1eff4f60aed624"
+    }
+  }
+}

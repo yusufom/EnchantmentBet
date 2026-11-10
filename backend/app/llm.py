@@ -123,6 +123,9 @@ def _stats_line(side: str, stats) -> str:
     if stats.goals_scored_pg is not None:
         parts.append(f"scored/pg {stats.goals_scored_pg}")
         parts.append(f"conceded/pg {stats.goals_conceded_pg}")
+    if stats.xg_for_pg is not None:
+        parts.append(f"xG/pg {stats.xg_for_pg}")
+        parts.append(f"xGA/pg {stats.xg_against_pg}")
     if stats.off_rating is not None:
         parts.append(f"off rating {stats.off_rating:.1f}")
         parts.append(f"def rating {stats.def_rating:.1f}")
@@ -150,6 +153,18 @@ def _fixture_prompt(ctx: FixtureContext, pred: Prediction) -> str:
             f"{i.status}, {i.detail or 'unknown'})"
             for i in ctx.injuries
         ))
+    if pred.odds and pred.odds.match_winner:
+        mw = pred.odds.match_winner
+        lines.append(
+            f"Bookmaker odds (vig removed, {pred.odds.bookmakers} book(s)): "
+            f"home {mw.get('home',0):.2f}, draw {mw.get('draw',0):.2f}, "
+            f"away {mw.get('away',0):.2f}. The market is well informed — treat a "
+            "large gap between it and the model as a reason to look harder, not "
+            "as an automatic edge."
+        )
+    if pred.match_facts:
+        lines.append("Pre-match facts:")
+        lines += [f"  - {mf.label}: {mf.value}" for mf in pred.match_facts]
     if pred.news:
         lines.append("News headlines (numbered, from keyword search — many may be irrelevant):")
         lines += [f"  [{i}] {n.headline} — {n.source or 'unknown'}" for i, n in enumerate(pred.news)]

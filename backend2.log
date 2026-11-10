@@ -1,0 +1,287 @@
+INFO:     Started server process [18145]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57757 - "GET /api/health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET https://v3.football.api-sports.io/fixtures?date=2026-08-29&timezone=UTC "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v3.football.api-sports.io/standings?league=42&season=2026 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v3.football.api-sports.io/standings?league=42&season=2025 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v3.football.api-sports.io/standings?league=42&season=2024 "HTTP/1.1 200 OK"
+INFO:app.providers.apisports:standings: league 42 season 2024 -> 24 teams
+INFO:httpx:HTTP Request: GET https://v3.football.api-sports.io/standings?league=141&season=2024 "HTTP/1.1 200 OK"
+INFO:app.providers.apisports:standings: league 141 season 2024 -> 22 teams
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Liverpool%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Nottingham+Forest%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Bournemouth%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Everton%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Newcastle%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Coventry%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Hull+City%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Tottenham%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Swansea%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Derby%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22West+Brom%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Middlesbrough%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Wolves%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22QPR%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Stoke+City%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Blackburn%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Bolton%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Portsmouth%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Lincoln%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Bristol+City%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Cardiff%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Preston%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Preston
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Charlton%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Sheffield+Utd%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Charlton
+WARNING:app.providers.news:news fetch failed for Sheffield Utd
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Norwich%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Southampton%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Norwich
+WARNING:app.providers.news:news fetch failed for Southampton
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Burnley%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Burnley
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Millwall%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Millwall
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22West+Ham%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for West Ham
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Peterborough%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Peterborough
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Watford%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Watford
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Blackpool%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Blackpool
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Milton+Keynes+Dons%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Milton Keynes Dons
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Leicester%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Leicester
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Huddersfield%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Huddersfield
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Cambridge+United%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Cambridge United
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Barnsley%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Barnsley
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Leyton+Orient%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Leyton Orient
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Burton+Albion%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Burton Albion
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Notts+County%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Notts County
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Bradford%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Bradford
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Plymouth%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Plymouth
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Bromley%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Bromley
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Sheffield+Wednesday%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Sheffield Wednesday
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Doncaster%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Doncaster
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Stevenage%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Stevenage
+INFO:app.providers.apisports:team 1369 unresolved; using 42-tier prior (1350)
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Wycombe%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Wycombe
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Stockport+County%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Stockport County
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Cheltenham%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Barnet%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Cheltenham
+WARNING:app.providers.news:news fetch failed for Barnet
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Port+Vale%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Port Vale
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Crewe%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Crewe
+INFO:app.providers.apisports:team 1339 unresolved; using 42-tier prior (1350)
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Chesterfield%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Chesterfield
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Colchester%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Colchester
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Rochdale%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Rochdale
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Bristol+Rovers%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Crawley+Town%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Bristol Rovers
+WARNING:app.providers.news:news fetch failed for Crawley Town
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Rotherham%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Rotherham
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Northampton%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Northampton
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Gillingham%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Gillingham
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Grimsby%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Grimsby
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Fleetwood+Town%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Fleetwood Town
+INFO:app.providers.apisports:team 1349 unresolved; using 42-tier prior (1350)
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Tranmere%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Tranmere
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Newport+County%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Newport County
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Swindon+Town%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Swindon Town
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Oldham%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Oldham
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Salford+City%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Salford City
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Shrewsbury%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Shrewsbury
+INFO:app.providers.apisports:team 1828 unresolved; using 42-tier prior (1350)
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Walsall%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Walsall
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Accrington+ST%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Accrington ST
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22York%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for York
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Exeter+City%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Exeter City
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Real+Betis%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Real Betis
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Levante%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Levante
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Espanyol%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Espanyol
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Real+Sociedad%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Real Sociedad
+INFO:app.providers.apisports:team 9593 unresolved; using 141-tier prior (1450)
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Atletico+Madrid%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Sevilla%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Atletico Madrid
+WARNING:app.providers.news:news fetch failed for Sevilla
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Sabadell%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Sabadell
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Almeria%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Almeria
+INFO:app.providers.apisports:football slate: 40 fixtures, 5 api calls, 105 teams with stats
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:app.llm:claude reviewed 40/40 predictions
+INFO:app.services.predictions:refreshed 40 football predictions for 2026-08-29
+INFO:     127.0.0.1:57759 - "POST /api/predictions/refresh HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/games?date=2026-08-29&timezone=UTC "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=13&season=2026 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=13&season=2025 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=13&season=2024 "HTTP/1.1 200 OK"
+INFO:app.providers.apisports:standings: basketball league 13 season 2024 -> 24 teams
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=63&season=2026-2027 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=63&season=2025-2026 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=63&season=2024-2025 "HTTP/1.1 200 OK"
+INFO:app.providers.apisports:standings: basketball league 63 season 2024-2025 -> 16 teams
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=276&season=2026 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=276&season=2025 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=276&season=2024 "HTTP/1.1 200 OK"
+INFO:app.providers.apisports:standings: basketball league 276 season 2024 -> 6 teams
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=281&season=2027 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=281&season=2026 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=281&season=2025 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/standings?league=281&season=2024 "HTTP/1.1 200 OK"
+WARNING:app.providers.apisports:no basketball standings for league 281
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Las+Vegas+Aces+W%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Los+Angeles+Sparks+W%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Las Vegas Aces W
+WARNING:app.providers.news:news fetch failed for Los Angeles Sparks W
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Toronto+Tempo+W%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Toronto Tempo W
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Washington+Mystics+W%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Washington Mystics W
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Panteras%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Panteras
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22New+York+Liberty+W%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for New York Liberty W
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Correcaminos%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Correcaminos
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Chicago+Sky+W%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Chicago Sky W
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Abejas%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Abejas
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Can+Tho+Catfish%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Fuerza+Regia%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Can Tho Catfish
+WARNING:app.providers.news:news fetch failed for Fuerza Regia
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Ho+Chi+Minh+City+Wings%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Ho Chi Minh City Wings
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Egypt%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Egypt
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Mali%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Mali
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22D.R.+Congo%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for D.R. Congo
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Ivory+Coast%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Ivory Coast
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Angola%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Angola
+INFO:httpx:HTTP Request: GET https://newsapi.org/v2/everything?qInTitle=%22Senegal%22&language=en&sortBy=publishedAt&pageSize=5 "HTTP/1.1 429 Too Many Requests"
+WARNING:app.providers.news:news fetch failed for Senegal
+INFO:app.providers.apisports:basketball slate: 9 games, 14 api calls, 41 teams with stats
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:httpx2:HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+INFO:app.llm:claude reviewed 9/9 predictions
+INFO:app.services.predictions:refreshed 9 basketball predictions for 2026-08-29
+INFO:     127.0.0.1:57906 - "POST /api/predictions/refresh HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58152 - "OPTIONS /api/predictions?date=2026-08-29&sport=football HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58152 - "GET /api/predictions?date=2026-08-29&sport=football HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59311 - "OPTIONS /api/predictions?date=2026-08-29&sport=football HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59311 - "GET /api/predictions?date=2026-08-29&sport=football HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59314 - "OPTIONS /api/results/refresh HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET https://v3.football.api-sports.io/fixtures?date=2026-08-29&timezone=UTC "HTTP/1.1 200 OK"
+INFO:app.services.results:graded 40/40 football predictions for 2026-08-29
+INFO:     127.0.0.1:59314 - "POST /api/results/refresh HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59314 - "GET /api/predictions?date=2026-08-29&sport=football HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59344 - "OPTIONS /api/predictions?date=2026-08-29&sport=basketball HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59344 - "GET /api/predictions?date=2026-08-29&sport=basketball HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59344 - "GET /api/predictions?date=2026-08-29&sport=football HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET https://v1.basketball.api-sports.io/games?date=2026-08-29&timezone=UTC "HTTP/1.1 200 OK"
+INFO:app.services.results:graded 8/9 basketball predictions for 2026-08-29
+INFO:     127.0.0.1:59370 - "POST /api/results/refresh HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59370 - "GET /api/predictions?date=2026-08-29&sport=basketball HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18145]

@@ -14,6 +14,7 @@ from ..providers import get_provider
 from ..schemas import (
     SPORTS,
     AccuracySummary,
+    ConfidenceBucket,
     FixtureResult,
     MarketGrade,
     Prediction,
@@ -124,6 +125,21 @@ def accuracy_summary(date: str, predictions: list[Prediction]) -> AccuracySummar
     picks = [p.pick_correct for p in graded if p.pick_correct is not None]
     if picks:
         summary.pick_accuracy = round(sum(picks) / len(picks), 3)
+
+    # Same picks, split by the confidence they were made with. Reported in a
+    # fixed high -> low order so the bands read as a calibration curve.
+    by_confidence: dict[str, list[bool]] = {}
+    for p in graded:
+        if p.pick_correct is not None:
+            by_confidence.setdefault(p.confidence_label, []).append(p.pick_correct)
+    summary.confidence_accuracy = {
+        label: ConfidenceBucket(
+            graded=len(vals),
+            accuracy=round(sum(vals) / len(vals), 3),
+        )
+        for label in ("high", "medium", "low")
+        if (vals := by_confidence.get(label))
+    }
 
     by_market: dict[str, list[bool]] = {}
     for p in graded:

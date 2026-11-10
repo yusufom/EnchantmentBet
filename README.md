@@ -49,6 +49,73 @@ automatically per sport once its key is present):
 - `NEWSAPI_KEY` — [newsapi.org](https://newsapi.org) (optional; enriches predictions with headline sentiment)
 - `ANTHROPIC_API_KEY` — [Anthropic](https://console.anthropic.com) (optional; enables the Claude review layer)
 
+### Expected goals (xG)
+
+Team strength for the big-5 leagues (Premier League, La Liga, Serie A,
+Bundesliga, Ligue 1) is driven by **expected goals** rather than actual ones.
+A scoreline contains a lot of finishing luck that does not repeat; xG measures
+the chances a team created and conceded, which does. Both the Dixon-Coles
+scoring rates and the Elo rating use a blend, set by `XG_WEIGHT` (default
+`0.7`; `0` turns the layer off).
+
+Measured on a walk-forward backtest of **1,462 out-of-sample big-5 fixtures**
+from 2024/25 — team strength rebuilt from only the matches played before each
+fixture, then run through the real prediction code:
+
+| | actual goals | xG blend (0.7) |
+|---|---|---|
+| Pick accuracy | 51.50% | **53.69%** (+2.19 pts) |
+| Log-loss | 1.0012 | **0.9841** |
+| Brier score | 0.5968 | **0.5857** |
+
+A paired McNemar test gives p = 0.0017, so the gain is statistically real
+rather than noise. Cards backed by xG are labelled `+ xg` in the algorithm
+field, and a team scoring well above or below its chances is called out as a
+factor.
+
+Source is Understat's own league endpoint, cached for 24h in process and
+persisted with the team stats. Clubs are matched to api-sports ids by
+normalised name with a small alias table — verified at 96/96 across the big
+five. Leagues Understat does not cover (the EFL, most of the world) keep using
+actual goals automatically.
+
+### Bookmaker odds & match facts (SportMonks)
+
+With `SPORTMONKS_API_KEY` set, covered fixtures gain a **market view** and a
+set of **match facts**.
+
+De-vigged 1X2, over/under 2.5 and both-teams-to-score probabilities are
+blended into the model's own at `ODDS_WEIGHT` (default `0.5`). Backtested
+walk-forward on 157 Danish/Scottish fixtures with historical pre-match odds:
+
+| | model alone | +market (0.5) | market alone |
+|---|---|---|---|
+| Log-loss | 1.0264 | 1.0068 | 1.0008 |
+| Brier | 0.6141 | 0.6013 | 0.5975 |
+| Pick accuracy | 49.04% | 51.59% | 49.04% |
+
+Blending improves **calibration** monotonically; it does **not** reliably
+improve which side is picked (McNemar p = 0.82 — the favourite is usually the
+same either way). So odds are used to sharpen the probabilities, not to pick
+winners, and the weight stops well short of 1.0 because a full blend would
+simply reproduce the bookmaker's book. Sample is small (157) — treat as
+provisional.
+
+**Match facts** are shown on the card and passed to Claude: the market's
+favourite, venue and capacity, weather, referee, absentees, head-to-head
+record, and — most usefully — a flag when the model and the market disagree
+by more than 8 points, which is either an edge or a sign the model is missing
+something.
+
+*Plan limits, verified by probing this key:* the free tier covers only the
+**Danish Superliga** and **Scottish Premiership**; fixtures, pre-match odds,
+statistics, lineups, events, sidelined players, weather, venues, referees,
+standings and head-to-head are available, while predictions/probabilities,
+value bets, xG, trends and the news feed return 403. Uncovered leagues fall
+through untouched. Fixture matching is orientation-aware — a reversed
+home/away pairing is the other leg and is rejected rather than matched, which
+would otherwise invert the odds.
+
 ### Claude review layer
 
 With `ANTHROPIC_API_KEY` set, every refreshed prediction is reviewed by Claude
@@ -86,13 +153,21 @@ within about a day of today, so grade a slate the same evening or the next
 morning.
 
 **Free-plan note (api-sports):** free keys allow only ~100 requests/day and
-10/minute, and expose stats a couple of seasons back. The provider adapts:
-it paces and retries around the per-minute throttle under a time budget
-(`API_BUDGET_SECONDS`), resolves each team's stats through its real league
-history (so promoted/relegated clubs still differentiate), skips optional
-calls (injuries, head-to-head) when constrained, and caches stats for 24h —
-so **each press of Refresh fills in more fixtures** until the slate is fully
-differentiated. A paid key removes all of this automatically.
+10/minute, and expose stats a couple of seasons back. The provider is built
+around that:
+
+- **Team strength comes from league standings, not per-team lookups.** One
+  `/standings` call returns every club in a competition with played, W/D/L,
+  goals for/against and form — so a 40-fixture slate costs ~9 requests
+  instead of ~120, and nearly every team gets real numbers.
+- **Stats persist in MongoDB** (`stats_ttl_days`, default 7), so restarts and
+  next-day refreshes cost almost nothing.
+- **Teams in no accessible table** (cross-border cup ties, uncovered leagues)
+  fall back to a league-strength prior rather than a flat 1500, so a Premier
+  League side is still favoured against a League Two one. Those cards are
+  marked **est.**
+- Season selection walks backwards until the plan returns data, so the same
+  code uses current-season standings the moment you upgrade the key.
 
 ## How predictions work
 

@@ -21,6 +21,9 @@ async def ensure_indexes() -> None:
     )
     await db.predictions.create_index([("date", 1)])
     await db.refresh_meta.create_index([("sport", 1), ("date", 1)], unique=True)
+    # Team strength profiles, cached across refreshes and restarts so a
+    # rate-limited plan accumulates coverage instead of re-paying each time.
+    await db.team_stats.create_index([("sport", 1), ("team_id", 1)], unique=True)
 
 
 async def close_db() -> None:

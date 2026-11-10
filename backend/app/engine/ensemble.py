@@ -4,7 +4,8 @@ head-to-head record, injuries and news into final market probabilities.
 
 from datetime import datetime, timezone
 
-from ..schemas import Factor, FixtureContext, Market, Prediction
+from ..config import get_settings
+from ..schemas import Factor, FixtureContext, Market, MatchFact, Prediction, TeamStats
 from . import basketball, elo, poisson, tennis
 from .adjustments import build_factors, injury_multiplier, news_multiplier
 
@@ -74,6 +75,8 @@ def predict_fixture(ctx: FixtureContext) -> Prediction:
         prediction = _predict_tennis(ctx, home_mult, away_mult, elo_p_home, w, home_edge)
 
     markets, predicted_score, exp_home, exp_away, algorithm = prediction
+    if ctx.odds:
+        markets, algorithm = _apply_market(markets, ctx, algorithm)
     main = markets[0]
     sorted_probs = sorted(main.outcomes.values(), reverse=True)
     conf, conf_label = _confidence(sorted_probs[0], sorted_probs[1], ctx.data_quality)
@@ -88,6 +91,31 @@ def predict_fixture(ctx: FixtureContext) -> Prediction:
         home_form,
         away_form,
     )
+    for stats, comp, side in (
+        (ctx.home_stats, ctx.fixture.home, "home"),
+        (ctx.away_stats, ctx.fixture.away, "away"),
+    ):
+        if stats.xg_for_pg is None or stats.goals_scored_pg is None:
+            continue
+        # Scoring far above or below the chances created rarely persists, so
+        # the table can flatter or hide a team. Worth saying out loud.
+        gap = stats.goals_scored_pg - stats.xg_for_pg
+        if abs(gap) >= 0.25:
+            over = gap > 0
+            factors.append(
+                Factor(
+                    label=f"{comp.name} {'over' if over else 'under'}performing their xG",
+                    detail=(
+                        f"Scoring {stats.goals_scored_pg:.2f}/game from "
+                        f"{stats.xg_for_pg:.2f} xG — {'finishing has flattered them'
+                        if over else 'chances have not been converted'}"
+                    ),
+                    impact=("positive_away" if over else "positive_home")
+                    if side == "home"
+                    else ("positive_home" if over else "positive_away"),
+                )
+            )
+
     if abs(ctx.home_stats.rating - ctx.away_stats.rating) > 80:
         stronger = ctx.fixture.home if ctx.home_stats.rating > ctx.away_stats.rating else ctx.fixture.away
         factors.insert(
@@ -98,6 +126,13 @@ def predict_fixture(ctx: FixtureContext) -> Prediction:
                 impact="positive_home" if stronger is ctx.fixture.home else "positive_away",
             ),
         )
+
+    facts = list(ctx.match_facts)
+    disagreement = market_disagreement(
+        main.outcomes, ctx.odds, ctx.fixture.home.name, ctx.fixture.away.name
+    )
+    if disagreement:
+        facts.append(disagreement)
 
     return Prediction(
         sport=sport,
@@ -113,9 +148,73 @@ def predict_fixture(ctx: FixtureContext) -> Prediction:
         factors=factors,
         injuries=ctx.injuries,
         news=ctx.news,
+        match_facts=facts,
+        odds=ctx.odds,
         algorithm=algorithm,
         data_source=ctx.source,
+        data_quality=round(ctx.data_quality, 3),
         generated_at=datetime.now(timezone.utc),
+    )
+
+
+def _apply_market(markets, ctx, algorithm):
+    """Blend de-vigged bookmaker probabilities into the model's markets.
+
+    Odds aggregate every public signal plus real money, so they are a strong
+    prior — but blending all the way to the market would just reproduce the
+    bookmaker's book, edge and all. The weight keeps the model's own view in
+    the mix.
+    """
+    w = max(0.0, min(1.0, get_settings().odds_weight))
+    if w <= 0:
+        return markets, algorithm
+    odds = ctx.odds
+    by_name = {m.name: m for m in markets}
+    pairs = [("match_winner", odds.match_winner),
+             ("over_under_2.5", odds.over_under_25),
+             ("btts", odds.btts)]
+    touched = False
+    for name, market_probs in pairs:
+        target = by_name.get(name)
+        if not target or not market_probs:
+            continue
+        if set(market_probs) != set(target.outcomes):
+            continue
+        blended = {
+            k: (1.0 - w) * target.outcomes[k] + w * market_probs[k]
+            for k in target.outcomes
+        }
+        total = sum(blended.values()) or 1.0
+        target.outcomes = {k: round(v / total, 4) for k, v in blended.items()}
+        target.pick = max(target.outcomes, key=target.outcomes.get)
+        target.pick_probability = round(target.outcomes[target.pick], 4)
+        touched = True
+    return markets, (algorithm + " + market odds" if touched else algorithm)
+
+
+def market_disagreement(model_probs: dict, odds, home: str, away: str) -> MatchFact | None:
+    """Flag where the model and the market see the game differently.
+
+    A gap is either an edge or a sign the model is missing something — either
+    way it is the most interesting thing on the card.
+    """
+    if not odds or not odds.match_winner:
+        return None
+    labels = {"home": home, "draw": "a draw", "away": away}
+    gaps = {
+        k: model_probs.get(k, 0.0) - odds.match_winner.get(k, 0.0)
+        for k in odds.match_winner
+    }
+    outcome = max(gaps, key=gaps.get)
+    gap = gaps[outcome]
+    if gap < 0.08:
+        return None
+    return MatchFact(
+        category="market",
+        label="Model disagrees with the market",
+        value=(f"Model rates {labels[outcome]} at "
+               f"{model_probs.get(outcome, 0)*100:.0f}% vs the market's "
+               f"{odds.match_winner[outcome]*100:.0f}%"),
     )
 
 
@@ -123,13 +222,34 @@ def _blend_two_way(model_p: float, elo_p: float, w: float, home_edge: float) -> 
     return _clamp01(w * model_p + (1.0 - w) * elo_p + home_edge)
 
 
+def scoring_rates(stats: TeamStats) -> tuple[float, float]:
+    """Effective (scored, conceded) per game, blending expected goals with
+    actual ones where xG is available.
+
+    Actual scorelines carry finishing luck that does not repeat; xG measures
+    the chances created and conceded, which does. The blend keeps some actual
+    signal because xG models have their own error.
+    """
+    scored = stats.goals_scored_pg if stats.goals_scored_pg is not None else 1.35
+    conceded = stats.goals_conceded_pg if stats.goals_conceded_pg is not None else 1.35
+    if stats.xg_for_pg is None or stats.xg_against_pg is None:
+        return scored, conceded
+    w = max(0.0, min(1.0, get_settings().xg_weight))
+    return (
+        w * stats.xg_for_pg + (1.0 - w) * scored,
+        w * stats.xg_against_pg + (1.0 - w) * conceded,
+    )
+
+
 def _predict_football(ctx, home_mult, away_mult, elo_p_home, w, home_edge):
     hs, as_ = ctx.home_stats, ctx.away_stats
+    home_scored, home_conceded = scoring_rates(hs)
+    away_scored, away_conceded = scoring_rates(as_)
     lam_h, lam_a = poisson.expected_goals(
-        hs.goals_scored_pg or 1.35,
-        hs.goals_conceded_pg or 1.35,
-        as_.goals_scored_pg or 1.35,
-        as_.goals_conceded_pg or 1.35,
+        home_scored,
+        home_conceded,
+        away_scored,
+        away_conceded,
         home_mult,
         away_mult,
     )
@@ -155,7 +275,8 @@ def _predict_football(ctx, home_mult, away_mult, elo_p_home, w, home_edge):
         f"{score[0]}-{score[1]}",
         lam_h,
         lam_a,
-        "dixon-coles-poisson + elo ensemble",
+        "dixon-coles-poisson + elo ensemble"
+        + (" + xg" if hs.xg_for_pg is not None or as_.xg_for_pg is not None else ""),
     )
 
 
